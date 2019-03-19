@@ -4,13 +4,14 @@ from struct import *
 from utils import *
 from htree import *
 import time
+import sys
 
-filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1000K.data"
+#filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1000K.data"
 #filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD10K.data"
-#filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1K.data"
-sup = 30000
+filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1K.data"
+#sup = 30000
 #sup = 50
-#sup = 5
+sup = 5
 
 blocksize = 4
 
@@ -74,19 +75,24 @@ class Apriori(object):
         return items
 
     def Apriori_generate_frequent_itemsets(self):
-        dataset = self.Load_data(self.filename)
+        tStart = time.time()
+        #dataset = self.Load_data(self.filename)
 
-        candidate_num, frequnt_num, all_frequent_itemsets = self.Find_frequent_one(
-            dataset, sup)
+        candidate_num, frequnt_num, all_frequent_itemsets = self.Find_frequent_one(self.sup)
         print('L1====================================')
         print('Candidate 1-itemset is', candidate_num)
         print('Frequent 1-itemset is', frequnt_num)
         prev_frequent_num = frequnt_num
         print('====================================')
+        tEnd = time.time()
+        print(tEnd - tStart)
+
         prev_frequent = [x[0] for x in all_frequent_itemsets]
         prev_frequent.sort(key=lambda tup: tup[0])
+
         length = 2
         while len(prev_frequent) > 1:
+            tStart = time.time()
             new_candidates = []
             for i in range(len(prev_frequent)):
                 j = i + 1
@@ -101,7 +107,7 @@ class Apriori(object):
             h_tree = self.generate_hash_tree(new_candidates)
 
             # for each transaction, find all possible subsets of size "length"
-            k_subsets = self.generate_k_subsets(dataset, length)
+            k_subsets = self.generate_k_subsets(length)
             #k_subsets.sort(key=lambda tup: tup[1])
             #k_subsets.sort(key=lambda tup: tup[0])
 
@@ -116,13 +122,14 @@ class Apriori(object):
             print('Frequent itemset is', len(new_frequent)+prev_frequent_num)
             prev_frequent_num = len(new_frequent)+prev_frequent_num
             print('====================================')
-            if len(new_frequent) == 0:
-                break
+            tEnd = time.time()
+            print(tEnd - tStart)
+
             all_frequent_itemsets.extend(new_frequent)
             prev_frequent = [tup[0] for tup in new_frequent]
             prev_frequent.sort()
             length += 1
-            #break
+
         return all_frequent_itemsets
     #4, 5
     def generate_hash_tree(self, candidate_itemsets):
@@ -141,19 +148,18 @@ class Apriori(object):
             htree.insert(itemset)
         return htree
 
-    def generate_k_subsets(self, dataset, length):
-
+    def generate_k_subsets(self, length):
         subsets = []
-        for itemset in dataset:
-            subsets.extend(map(list, itertools.combinations(itemset, length)))
-            """
-            for i in range(0, len(itemset)):
-                for j in range(i+1, len(itemset)):
-                    set = []
-                    set.append(i)
-                    set.append(j)
-                    subsets.append(set)
-            """
+        with open(filename, 'rb') as f:
+            while True:
+                try:
+                    # load data
+                    self.Read_head(f)
+                    num = self.Read_items_num(f)
+                    items = self.Read_items(f, num)
+                    subsets.extend(map(list, itertools.combinations(items, length)))
+                except BaseException:
+                    break
         subsets = self.convert_tuple2int(subsets)
         return subsets
 
@@ -171,60 +177,37 @@ class Apriori(object):
 	apriori prune
 	'''
 
-    def Find_frequent_one(self, itemset, support):
+    def Find_frequent_one(self, support):
         candidate1 = {}
-        for row in itemset:
-            for word in row:
-                if word not in candidate1.keys():
-                    candidate1[word] = 1
-                else:
-                    candidate1[word] += 1
-        frequent1 = []
-        for key in candidate1:
-            if candidate1[key] >= support:
-                frequent1.append([key])
+        with open(filename, 'rb') as f:
+            while True:
+                try:
+                    # load data
+                    self.Read_head(f)
+                    num = self.Read_items_num(f)
+                    items = self.Read_items(f, num)
+                    for row in items:
+                        if row not in candidate1.keys():
+                            candidate1[row] = 1
+                        else:
+                            candidate1[row] += 1
+                except BaseException:
+                    break
+
+            frequent1 = []
+            for key in candidate1:
+                if candidate1[key] >= support:
+                    frequent1.append([key])
 
         return len(candidate1), len(frequent1), frequent1
 
-    def generate_association_rules(self, f_itemsets, confidence):
-        """
-        This method generates association rules with confidence greater than threshold
-        confidence. For finding confidence we don't need to traverse dataset again as we
-        already have support of frequent itemsets.
-        Remember Anti-monotone property ?
-        I've done pruning in this step also, which reduced its complexity significantly:
-        Say X -> Y is AR which don't have enough confidence then any other rule X' -> Y'
-        where (X' subset of X) is not possible as sup(X') >= sup(X).
-        :param f_itemsets: Frequent itemset with their support values
-        :param confidence:
-        :return: Returns association rules with associated confidence
-        """
-
-        hash_map = {}
-        for itemset in f_itemsets:
-            hash_map[tuple(itemset[0])] = itemset[1]
-
-        a_rules = []
-        for itemset in f_itemsets:
-            length = len(itemset[0])
-            if length == 1:
-                continue
-
-            union_support = hash_map[tuple(itemset[0])]
-            for i in range(1, length):
-
-                lefts = map(list, itertools.combinations(itemset[0], i))
-                for left in lefts:
-                    conf = 100.0 * union_support / hash_map[tuple(left)]
-                    if conf >= confidence:
-                        a_rules.append([left, list(set(itemset[0]) - set(left)), conf])
-        return a_rules
 
 
-ap = Apriori(filename, sup)
+
+ap = Apriori(sys.argv[1], int(sys.argv[2]))
 
 tStart = time.time()
 frequent = ap.Apriori_generate_frequent_itemsets()
-a_rules = ap.generate_k_subsets(frequent, 5)
 tEnd = time.time()
 print(tEnd - tStart)
+

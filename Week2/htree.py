@@ -18,7 +18,7 @@ class HTree:
         self.root = HNode()
         self.frequent_itemsets = []
 
-    def recur_insert(self, node, itemset, index, cnt):
+    def recur_insert(self, node, itemset, cnt):
         # TO-DO
         """
         Recursively adds nodes inside the tree and if required splits leaf node and
@@ -68,7 +68,7 @@ class HTree:
         # as list can't be hashed we need to convert this into tuple
         # which can be easily hashed in leaf node buckets
         itemset = tuple(itemset)
-        self.recur_insert(self.root, itemset, 0, 0)
+        self.recur_insert(self.root, itemset, 0)
 
     def add_support(self, itemset):
         runner = self.root
@@ -98,12 +98,13 @@ class HTree:
             index += 1
             """
 
-    def dfs(self, node, support):
+    def bfs(self, node, support):
         if node.isLeaf:
             for key, value in node.bucket.items():
                 if value >= support:
                     self.frequent_itemsets.append((list(key), value))
                     # print key, value, support_cnt
+            #print(self.frequent_itemsets)
             return
         """
         for child in node.children.values():
@@ -117,7 +118,7 @@ class HTree:
         :return:
         """
         self.frequent_itemsets = []
-        self.dfs(self.root, support_cnt)
+        self.bfs(self.root, support_cnt)
         return self.frequent_itemsets
 
     def hash(self, val):
