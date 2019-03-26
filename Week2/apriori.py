@@ -204,7 +204,8 @@ class Apriori(object):
 
 
 
-ap = Apriori(sys.argv[1], int(sys.argv[2]))
+#ap = Apriori(sys.argv[1], int(sys.argv[2]))
+ap = Apriori(filename, sup)
 
 tStart = time.time()
 frequent = ap.Apriori_generate_frequent_itemsets()
