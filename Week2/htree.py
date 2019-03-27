@@ -3,11 +3,7 @@ class HNode:
     Class which represents node in a hash tree.
     """
     def __init__(self):
-        #self.children = {}
         self.bucket = {}
-        self.isLeaf = True
-
-
 
 class HTree:
     """
@@ -15,29 +11,29 @@ class HTree:
     """
 
     def __init__(self):
-        self.root = HNode()
+        self.bucket = {}
         self.frequent_itemsets = []
 
     def insert(self, itemsets):
+        self.bucket = dict.fromkeys(itemsets, 0)
+        '''
         for itemset in itemsets:
-            if itemset in self.root.bucket:
-                self.root.bucket[itemset] += 1
-            else:
-                self.root.bucket[itemset] = 1
+            self.bucket[itemset] = 0
+        '''
 
-    def add_support(self, itemset):
-        runner = self.root
-        itemset = tuple(itemset)
-        if itemset in runner.bucket:
-            runner.bucket[itemset] += 1
+    def add_support(self, itemsets):
+        for itemset in itemsets:
+            if itemset in self.bucket:
+                self.bucket[itemset] += 1
 
 
-    def bfs(self, node, support):
-
-        for key, value in node.bucket.items():
+    def bfs(self, support):
+        '''
+        for key, value in self.bucket.items():
             if value >= support:
-                self.frequent_itemsets.append((list(key), value))
-                # print key, value, support_cnt
+                self.frequent_itemsets.append(key)
+        '''
+        self.frequent_itemsets = list((k, v) for k, v in self.bucket.items() if v >= support)
 
     def get_frequent_itemsets(self, support_cnt):
         """
@@ -46,7 +42,7 @@ class HTree:
         :return:
         """
         self.frequent_itemsets = []
-        self.bfs(self.root, support_cnt)
+        self.bfs(support_cnt)
         return self.frequent_itemsets
 
     def hash(self, val):

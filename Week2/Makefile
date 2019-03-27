@@ -1,8 +1,15 @@
-1k:
+1k_demo:
 	python apriori.py /Users/Rozen_mac/code/mining/Week2/APhw_demo/T10I10N0.1KD1K.data 4
-10k:
+10k_demo:
 	python apriori.py /Users/Rozen_mac/code/mining/Week2/APhw_demo/T20I15N1KD10K.data 9
-100k:
+100k_demo:
 	python apriori.py /Users/Rozen_mac/code/mining/Week2/APhw_demo/T12I30N0.5KD100K.data 300
-500k:
+500k_demo:
 	python apriori.py /Users/Rozen_mac/code/mining/Week2/APhw_demo/T18I20N2KD5000K.data 65000
+1k:
+	python apriori.py /Users/Rozen_mac/code/mining/Week2/AP/T15I7N0.5KD1K.data 5
+10k:
+	python apriori.py /Users/Rozen_mac/code/mining/Week2/AP/T15I7N0.5KD10K.data 50
+1000k:
+	python apriori.py /Users/Rozen_mac/code/mining/Week2/AP/T15I7N0.5KD1000K.data 30000
+
