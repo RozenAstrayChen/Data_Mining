@@ -114,22 +114,21 @@ class Apriori(object):
             yappi.set_clock_type('cpu')
             yappi.start(builtins=True)  # track builtins
 
-            new_candidate_num = self.generate_candidate(prev_frequent, length)
+            new_candidate = self.generate_candidate(prev_frequent, length)
 
             print('L%s====================================' % (length))
-            print('Total candidates is ', new_candidate_num+prev_frequent_num)
-
-            h_tree = self.frequent_support(length)
+            print('Total candidates is ', len(new_candidate)+prev_frequent_num)
+            self.generate_hash_tree(new_candidate)
+            self.frequent_support(length)
 
             # find frequent itemsets
-            new_frequent = h_tree.get_frequent_itemsets(self.sup)
+            new_frequent = self.htree.get_frequent_itemsets(self.sup)
 
             print('Frequent itemset is', len(new_frequent)+prev_frequent_num)
             prev_frequent_num = len(new_frequent)+prev_frequent_num
             print('====================================')
             tEnd = time.time()
             print(tEnd - tStart)
-
             #all_frequent_itemsets.extend(new_frequent)
             prev_frequent = [tup[0] for tup in new_frequent]
             prev_frequent.sort()
@@ -142,7 +141,7 @@ class Apriori(object):
             length += 1
 
         return all_frequent_itemsets
-    def generate_candidate(self, prev_frequent, length):
+    def generate_candidate(self, prev_frequent, k):
         '''
         # generate next candidate
         frequent = []
@@ -158,7 +157,7 @@ class Apriori(object):
 
         return len(new_candidates)
         '''
-
+        '''
         new_candidates = []
         for i in range(len(prev_frequent)):
             j = i + 1
@@ -176,14 +175,28 @@ class Apriori(object):
         self.htree.insert(new_candidates)
 
         return len(new_candidates)
-        
+        '''
+        new_candidates = []
+        lenLk = len(prev_frequent)
+        for i in range(lenLk):
+            for j in range(i+1, lenLk):
+                L1 = list(prev_frequent[i])[:k-2]
+                L2 = list(prev_frequent[j])[:k-2]
+                if L1 == L2:
+                    temp = list(set(prev_frequent[i]) | set(prev_frequent[j]))
+                    temp.sort()
+                    temp = tuple(temp)
+                    new_candidates.append(temp)
+        new_candidates.sort(key=lambda x: x[0])
+
+        return new_candidates
 
     def generate_hash_tree(self, itemsets):
         self.htree = HTree()
         # add this itemset to hashtree
         self.htree.insert(itemsets)
 
-    def frequent_support(self, length):
+    def frequent_support(self, k):
         with open(self.filename, 'rb') as f:
             while True:
                 try:
@@ -194,12 +207,23 @@ class Apriori(object):
                     items = self.Read_items(f, num)
                     '''
                     items = self.Read_itemsets(f)
-                    itemset = itertools.combinations(items, length)
-                    self.htree.add_support(itemset)
-
+                    itemsets = itertools.combinations(items, k)
+                    self.htree.add_support(itemsets)
+                    '''
+                    itemsets = []
+                    lenLk = len(items)
+                    for i in range(lenLk - 1):
+                        for j in range(i + 1, lenLk):
+                            L1 = list(items[i])[:k - 2]
+                            L2 = list(items[j])[:k - 2]
+                            if L1 == L2:
+                                temp = tuple(set(items[i]) | set(items[j]))
+                                itemsets.append(temp)
+                    itemsets.sort(key=lambda x:x[0])
+                    self.htree.add_support(itemsets)
+                    '''
                 except BaseException:
                     break
-        return self.htree
 
 
     '''

@@ -23,6 +23,7 @@ class HTree:
 
     def add_support(self, itemsets):
         for itemset in itemsets:
+            #print(itemset)
             if itemset in self.bucket:
                 self.bucket[itemset] += 1
 
