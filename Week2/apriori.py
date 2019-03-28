@@ -6,6 +6,9 @@ from htree import *
 import time
 import yappi
 import sys
+import psutil
+import gc
+import os
 #filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1000K.data"
 #filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD10K.data"
 #filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1K.data"
@@ -17,11 +20,12 @@ blocksize = 4
 
 
 class Apriori(object):
-    def __init__(self, filename, sup):
+    def __init__(self, filename, sup, debug):
         self.filename = filename
         self.hex = 4
         self.sup = sup
         self.htree = HTree()
+        self.debug = debug
 
     def Read_itemsets(self, f):
         # read TID
@@ -98,21 +102,26 @@ class Apriori(object):
     def Apriori_generate_frequent_itemsets(self):
         tStart = time.time()
         candidate_num, frequnt_num, all_frequent_itemsets = self.Find_frequent_one(self.sup)
+        
         print('L1====================================')
         print('Frequent 1-itemset is', frequnt_num)
+        process = psutil.Process(os.getpid())
+        print('Used Memory:', process.memory_info().rss / 1024 / 1024,'MB')
         prev_frequent_num = frequnt_num
         print('====================================')
         tEnd = time.time()
         print(tEnd - tStart)
+        
         prev_frequent = [x for x in all_frequent_itemsets]
         prev_frequent.sort(key=lambda tup: tup)
         length = 2
         while len(prev_frequent) > 1:
             tStart = time.time()
-            #profilling
-            yappi.clear_stats()  # clear profiler
-            yappi.set_clock_type('cpu')
-            yappi.start(builtins=True)  # track builtins
+            if self.debug:
+                #profilling
+                yappi.clear_stats()  # clear profiler
+                yappi.set_clock_type('cpu')
+                yappi.start(builtins=True)  # track builtins
 
             new_candidate = self.generate_candidate(prev_frequent, length)
 
@@ -123,22 +132,33 @@ class Apriori(object):
 
             # find frequent itemsets
             new_frequent = self.htree.get_frequent_itemsets(self.sup)
-
+            
             print('Frequent itemset is', len(new_frequent)+prev_frequent_num)
-            prev_frequent_num = len(new_frequent)+prev_frequent_num
+            process = psutil.Process(os.getpid())
+            print('Used Memory:', process.memory_info().rss / 1024 / 1024,'MB')
             print('====================================')
             tEnd = time.time()
             print(tEnd - tStart)
+
+            prev_frequent_num = len(new_frequent)+prev_frequent_num
             #all_frequent_itemsets.extend(new_frequent)
             prev_frequent = [tup[0] for tup in new_frequent]
             prev_frequent.sort()
+            if self.debug:
+                yappi.stop()
+                stat = yappi.get_func_stats()
+                var = 'callgrind.generate_tree' + str(length)
+                stat.save(var, type='callgrind')
+                # profilling end
 
-            yappi.stop()
-            stat = yappi.get_func_stats()
-            var = 'callgrind.generate_tree' + str(length)
-            stat.save(var, type='callgrind')
-            # profilling end
             length += 1
+            '''
+            gc
+            '''
+            del self.htree
+            del new_candidate
+            del new_frequent
+            gc.collect()
 
         return all_frequent_itemsets
     def generate_candidate(self, prev_frequent, k):
@@ -150,12 +170,9 @@ class Apriori(object):
         candidate.sort()
         new_candidates = []
         new_candidates.extend(itertools.combinations(candidate, length))
-        # generate htree
-        self.htree = HTree()
-        # add this itemset to hashtree
-        self.htree.insert(new_candidates)
+ 
 
-        return len(new_candidates)
+        return new_candidates
         '''
         '''
         new_candidates = []
@@ -176,6 +193,7 @@ class Apriori(object):
 
         return len(new_candidates)
         '''
+        
         new_candidates = []
         lenLk = len(prev_frequent)
         for i in range(lenLk):
@@ -190,7 +208,7 @@ class Apriori(object):
         new_candidates.sort(key=lambda x: x[0])
 
         return new_candidates
-
+        
     def generate_hash_tree(self, itemsets):
         self.htree = HTree()
         # add this itemset to hashtree
@@ -250,7 +268,7 @@ class Apriori(object):
         return len(candidate1), len(frequent1), frequent1
 
 
-ap = Apriori(filename=str(sys.argv[1]), sup=int(sys.argv[2]))
+ap = Apriori(filename=str(sys.argv[1]), sup=int(sys.argv[2]), debug=bool(sys.argv[3]))
 #ap = Apriori(filename, sup)
 
 tStart = time.time()
