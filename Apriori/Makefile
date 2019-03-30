@@ -1,3 +1,7 @@
+all:
+	python apriori.py $(p) $(s) $(d)
+pypy:
+	pypy apriori.py $(p) $(s) $(d)
 1k_demo:
 	python apriori.py /Users/Rozen_mac/code/mining/Week2/APhw_demo/T10I10N0.1KD1K.data 4
 10k_demo:
