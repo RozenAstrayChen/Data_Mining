@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 class Kmeans():
     def __init__(self, img, k=2):
         self.k = k
+        self.itera = 20
         self.img = img
         self.img_width, self.img_height = img.size
 
@@ -41,20 +42,22 @@ class Kmeans():
 
         return clusters
 
-    def adjustCentroids(selfs, clusters):
+    def adjustCentroids(self, centroids, clusters):
         new_centroids = []
         keys = sorted(clusters.keys())
+        # print(keys)
 
         for k in keys:
             n = np.mean(clusters[k], axis=0)
             new = (int(n[0]), int(n[1]), int(n[2]))
-            print(str(k) + ": " + str(new))
+            #print(str(k) + ": " + str(new))
             new_centroids.append(new)
 
         return new_centroids
 
 
     def fit(self):
+        i = 0
         centroids = []
         old_centroids = []
         self.px = self.img.load()
@@ -68,17 +71,18 @@ class Kmeans():
             centroids.append(centroid)
 
         print("init centroids ", centroids)
-
-        old_centroids = centroids
-        clusters = self.assignPixels(centroids)
-        centroids = self.adjustCentroids(clusters)
+        while not self.converged(centroids, old_centroids) and i <= 20:
+            i+=1
+            old_centroids = centroids
+            clusters = self.assignPixels(centroids)
+            centroids = self.adjustCentroids(old_centroids, clusters)
 
         print("===========================================")
         print("Convergence Reached!")
         print(centroids)
         return centroids
 
-    def drawWindows(self, centroids):
+    def drawWindows(self, centroids, title):
         img = Image.new('RGB', (self.img_width, self.img_height), "white")
         p = img.load()
 
@@ -87,13 +91,49 @@ class Kmeans():
                 RGB_value = centroids[self.getMin(px[x, y], centroids)]
                 p[x, y] = RGB_value
 
-        img.show()
+        img.show(title=title)
+
+    def converged(self, centroids, old_centroids):
+        if len(old_centroids) == 0:
+            return False
+
+        if len(centroids) <= 5:
+            a = 1
+        elif len(centroids) <= 10:
+            a = 2
+        else:
+            a = 4
+
+        for i in range(0, len(centroids)):
+            cent = centroids[i]
+            old_cent = old_centroids[i]
+
+            if ((int(old_cent[0]) - a) <= cent[0] <= (int(old_cent[0]) + a)) and (
+                    (int(old_cent[1]) - a) <= cent[1] <= (int(old_cent[1]) + a)) and (
+                    (int(old_cent[2]) - a) <= cent[2] <= (int(old_cent[2]) + a)):
+                continue
+            else:
+                return False
+
+        return True
 
 
-
+'''
 file_path = '/Users/Rozen_mac/code/mining/K_means/sample.jpg'
 img = R.Read_JPG(file_path)
+for i in range(2, 6):
+    px = img.load()
+    k = Kmeans(img, k=i)
+    reslut = k.fit()
+    k.drawWindows(reslut, str(i))
+
+'''
+
+file_path = '/Users/Rozen_mac/code/mining/K_means/sample2.jpg'
+img = R.Read_JPG(file_path)
 px = img.load()
-k = Kmeans(img, k=3)
+#for i in range(2, 6):
+px = img.load()
+k = Kmeans(img, k=5)
 reslut = k.fit()
-k.drawWindows(reslut)
+k.drawWindows(reslut, str(4))

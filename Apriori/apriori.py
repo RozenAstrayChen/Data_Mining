@@ -9,18 +9,19 @@ import sys
 import psutil
 import gc
 import os
-#filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1000K.data"
-#filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD10K.data"
-#filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1K.data"
-#sup = 30000
-#sup = 50
-#sup = 5
+
+# filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1000K.data"
+# filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD10K.data"
+# filename = "/Users/Rozen_mac/code/mining/Week2/T15I7N0.5KD1K.data"
+# sup = 30000
+# sup = 50
+# sup = 5
 
 blocksize = 4
 
 
 class Apriori(object):
-    def __init__(self, filename, sup, debug):
+    def __init__(self, filename, sup, debug=False):
         self.filename = filename
         self.hex = 4
         self.sup = sup
@@ -29,12 +30,12 @@ class Apriori(object):
 
     def Read_itemsets(self, f):
         # read TID
-        f.read(4*2)
+        f.read(4 * 2)
         # read row length
         row_hex_num = f.read(4)
         num = int(unpack('<I', row_hex_num)[0])
 
-        #num = int(hex_length[0])
+        # num = int(hex_length[0])
         items = []
 
         itemset_hex = f.read(4 * num)
@@ -48,14 +49,12 @@ class Apriori(object):
 
         return items
 
-
     def Read_head(self, f):
         '''
         hex has 4 byte, but head has 8 byte, should read only one
         '''
         f.read(4)
         f.read(4)
-
 
     def Read_items_num(self, f):
         '''
@@ -75,8 +74,6 @@ class Apriori(object):
         item = unpack('<I', f.read(4))
         return item
 
-
-
     def Read_items(self, f, items_num):
         '''
         read many row data
@@ -88,7 +85,7 @@ class Apriori(object):
             item = unpack('<I', item)
             items.append(item[0])
         '''
-        itemset_hex = f.read(4*items_num)
+        itemset_hex = f.read(4 * items_num)
         i = 0
         j = 4
         for _ in range(items_num):
@@ -99,26 +96,26 @@ class Apriori(object):
 
         return items
 
-    def Apriori_generate_frequent_itemsets(self):
+    def Apriori(self):
         tStart = time.time()
         candidate_num, frequnt_num, all_frequent_itemsets = self.Find_frequent_one(self.sup)
-        
+
         print('L1====================================')
         print('Frequent 1-itemset is', frequnt_num)
         process = psutil.Process(os.getpid())
-        print('Used Memory:', process.memory_info().rss / 1024 / 1024,'MB')
+        print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
         prev_frequent_num = frequnt_num
         print('====================================')
         tEnd = time.time()
         print(tEnd - tStart)
-        
+
         prev_frequent = [x for x in all_frequent_itemsets]
         prev_frequent.sort(key=lambda tup: tup)
         length = 2
         while len(prev_frequent) > 1:
             tStart = time.time()
             if self.debug:
-                #profilling
+                # profilling
                 yappi.clear_stats()  # clear profiler
                 yappi.set_clock_type('cpu')
                 yappi.start(builtins=True)  # track builtins
@@ -126,22 +123,22 @@ class Apriori(object):
             new_candidate = self.generate_candidate(prev_frequent, length)
 
             print('L%s====================================' % (length))
-            print('Total candidates is ', len(new_candidate)+prev_frequent_num)
+            print('Total candidates is ', len(new_candidate) + prev_frequent_num)
             self.generate_hash_tree(new_candidate)
             self.frequent_support(length)
 
             # find frequent itemsets
             new_frequent = self.htree.get_frequent_itemsets(self.sup)
-            
-            print('Frequent itemset is', len(new_frequent)+prev_frequent_num)
+
+            print('Frequent itemset is', len(new_frequent) + prev_frequent_num)
             process = psutil.Process(os.getpid())
-            print('Used Memory:', process.memory_info().rss / 1024 / 1024,'MB')
+            print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
             print('====================================')
             tEnd = time.time()
             print(tEnd - tStart)
 
-            prev_frequent_num = len(new_frequent)+prev_frequent_num
-            #all_frequent_itemsets.extend(new_frequent)
+            prev_frequent_num = len(new_frequent) + prev_frequent_num
+            # all_frequent_itemsets.extend(new_frequent)
             prev_frequent = [tup[0] for tup in new_frequent]
             prev_frequent.sort()
             if self.debug:
@@ -161,6 +158,7 @@ class Apriori(object):
             gc.collect()
 
         return all_frequent_itemsets
+
     def generate_candidate(self, prev_frequent, k):
         '''
         # generate next candidate
@@ -170,7 +168,7 @@ class Apriori(object):
         candidate.sort()
         new_candidates = []
         new_candidates.extend(itertools.combinations(candidate, length))
- 
+
 
         return new_candidates
         '''
@@ -193,13 +191,13 @@ class Apriori(object):
 
         return len(new_candidates)
         '''
-        
+
         new_candidates = []
         lenLk = len(prev_frequent)
         for i in range(lenLk):
-            for j in range(i+1, lenLk):
-                L1 = list(prev_frequent[i])[:k-2]
-                L2 = list(prev_frequent[j])[:k-2]
+            for j in range(i + 1, lenLk):
+                L1 = list(prev_frequent[i])[:k - 2]
+                L2 = list(prev_frequent[j])[:k - 2]
                 if L1 == L2:
                     temp = list(set(prev_frequent[i]) | set(prev_frequent[j]))
                     temp.sort()
@@ -208,7 +206,7 @@ class Apriori(object):
         new_candidates.sort(key=lambda x: x[0])
 
         return new_candidates
-        
+
     def generate_hash_tree(self, itemsets):
         self.htree = HTree()
         # add this itemset to hashtree
@@ -243,10 +241,10 @@ class Apriori(object):
                 except BaseException:
                     break
 
-
     '''
 	apriori prune
 	'''
+
     def Find_frequent_one(self, support):
         candidate1 = {}
         with open(self.filename, 'rb') as f:
@@ -269,10 +267,9 @@ class Apriori(object):
 
 
 ap = Apriori(filename=str(sys.argv[1]), sup=int(sys.argv[2]), debug=bool(sys.argv[3]))
-#ap = Apriori(filename, sup)
+# ap = Apriori(filename, sup)
 
 tStart = time.time()
-frequent = ap.Apriori_generate_frequent_itemsets()
+frequent = ap.Apriori()
 tEnd = time.time()
 print("total time is ", tEnd - tStart)
-
