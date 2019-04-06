@@ -1,10 +1,3 @@
-class HNode:
-    """
-    Class which represents node in a hash tree.
-    """
-    def __init__(self):
-        self.bucket = {}
-
 class HTree:
     """
     Wrapper class for HTree instance
