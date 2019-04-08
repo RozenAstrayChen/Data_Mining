@@ -116,7 +116,6 @@ class Apriori(object):
                     frequent1.append([key])
         return len(candidate1), len(frequent1), frequent1
 
-
     def Generate_candidate(self, prev_frequent, k):
 
         new_candidates = []
@@ -135,31 +134,35 @@ class Apriori(object):
         return new_candidates
 
     def Generate_hash_tree(self, itemsets):
-        self.htree = HTree()
-        # add this itemset to hashtree
-        self.htree.insert(itemsets)
+        htree = HTree()
+        for itemset in itemsets:
+            # add this itemset to hashtree
+            htree.insert(itemset)
+        return htree
 
     def Frequent_support(self, k):
         with open(self.filename, 'rb') as f:
             while True:
                 try:
-                    
+
                     items = self.Read_itemsets(f)
-                    itemsets = itertools.combinations(items, k)
-                    self.htree.add_support(itemsets)
+                    k_subset = itertools.combinations(items, k)
                     '''
-                    itemsets = []
                     lenLk = len(items)
                     for i in range(lenLk - 1):
                         for j in range(i + 1, lenLk):
                             L1 = list(items[i])[:k - 2]
                             L2 = list(items[j])[:k - 2]
                             if L1 == L2:
-                                temp = tuple(set(items[i]) | set(items[j]))
-                                itemsets.append(temp)
-                    itemsets.sort(key=lambda x:x[0])
-                    self.htree.add_support(itemsets)
+                                temp = list(set(items[i]) | set(items[j]))
+                                temp.sort()
+                                temp = tuple(temp)
+                                print(temp)
+                                self.htree.add_support(temp)
                     '''
+
+                    for subset in k_subset:
+                        self.htree.add_support(subset)
                 except BaseException:
                     break
 
@@ -191,7 +194,7 @@ class Apriori(object):
 
             print('L%s====================================' % (length))
             print('Total candidates is ', len(new_candidate) + prev_frequent_num)
-            self.Generate_hash_tree(new_candidate)
+            self.htree = self.Generate_hash_tree(new_candidate)
             self.Frequent_support(length)
 
             # find frequent itemsets
